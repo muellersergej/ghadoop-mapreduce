@@ -263,6 +263,7 @@ public class TaskTracker
   int workerThreads;
   CleanupQueue directoryCleanupThread;
   private volatile JvmManager jvmManager;
+  private volatile DrmaaManager drmaaManager;
   UserLogCleaner taskLogCleanupThread;
   private TaskMemoryManagerThread taskMemoryManager;
   private boolean taskMemoryManagerEnabled = true;
@@ -652,6 +653,7 @@ public class TaskTracker
     int tmpPort = socAddr.getPort();
     
     this.jvmManager = new JvmManager(this);
+    this.drmaaManager = new DrmaaManager(this);
 
     // Set service-level authorization security policy
     if (this.fConf.getBoolean(
@@ -1225,6 +1227,7 @@ public class TaskTracker
     
     this.distributedCacheManager.stopCleanupThread();
     jvmManager.stop();
+    drmaaManager.stop();
     
     // shutdown RPC connections
     RPC.stopProxy(jobClient);
@@ -2630,6 +2633,7 @@ public class TaskTracker
       this.taskStatus.setFinishTime(System.currentTimeMillis());
       this.done = true;
       jvmManager.taskFinished(runner);
+      // TODO ghadoop: report that task is done to torqueManager
       runner.signalDone();
       LOG.info("Task " + task.getTaskID() + " is done.");
       LOG.info("reported output size for " + task.getTaskID() +  "  was " + taskStatus.getOutputSize());
@@ -3088,6 +3092,31 @@ public class TaskTracker
   // ///////////////////////////////////////////////////////////////
   // TaskUmbilicalProtocol
   /////////////////////////////////////////////////////////////////
+
+  /**
+   * Called upon startup by the child process, to fetch Task data.
+   */
+  public synchronized JvmTask getTask(TaskAttemptID taskId)
+  throws IOException {
+    // TODO: do things right here, the task attemped id should return the required Task
+    LOG.debug("Child JVM asked for a task with ID "+ taskId);
+
+    RunningJob rjob = runningJobs.get(taskId.getJobID());
+    if (rjob == null) { //kill the JVM since the job is dead
+      LOG.info("Killing JVM requesting for task  " + taskId + " since job " + taskId.getJobID() + " is dead");
+      return new JvmTask(null, true);
+    }
+
+    TaskInProgress tip = tasks.get(taskId);
+    if (tip != null) { //is task still present
+      LOG.info("Torque child is given task with:" + taskId);
+      return new JvmTask(tip.getTask(), false);
+    } else {
+      LOG.info("Killing torque child since scheduled task: " +
+          tip.getTask().getTaskID() + " is " + tip.taskStatus.getRunState());
+      return new JvmTask(null, true);
+    }
+  }  
 
   /**
    * Called upon startup by the child process, to fetch Task data.

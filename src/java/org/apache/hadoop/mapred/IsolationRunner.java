@@ -121,6 +121,10 @@ public class IsolationRunner {
         SortedRanges.Range range) throws IOException {
       LOG.info("Task " + taskid + " reportedNextRecordRange " + range);
     }
+
+    public JvmTask getTask(TaskAttemptID taskId) throws IOException {
+      return null;
+    }
   }
   
   private ClassLoader makeClassLoader(JobConf conf, 

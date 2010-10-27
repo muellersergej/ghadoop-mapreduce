@@ -76,6 +76,16 @@ public interface TaskUmbilicalProtocol extends VersionedProtocol {
    * @throws IOException 
    */
   JvmTask getTask(JvmContext context) throws IOException;
+
+
+  /**
+   * Called when a torque child task process starts, to get its task.
+   * @param taskId the ID of the task attempt w.r.t the tasktracker that launched it
+   * @return Task object
+   * @throws IOException
+   */
+
+  JvmTask getTask(TaskAttemptID taskId) throws IOException;    
   
   /**
    * Report child's progress to parent.

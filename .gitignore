@@ -19,6 +19,9 @@
 .launches
 .settings
 .svn
+.idea
+.DS_Store
+*.iml
 build/
 build.properties
 conf/masters

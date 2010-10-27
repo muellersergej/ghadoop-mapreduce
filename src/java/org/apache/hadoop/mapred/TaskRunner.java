@@ -77,6 +77,9 @@ abstract class TaskRunner extends Thread {
   protected JobConf conf;
   JvmManager jvmManager;
 
+  DrmaaManager drmaaManager;
+  private boolean useDrmaa;
+
   /** 
    * for cleaning up old map outputs
    */
@@ -93,6 +96,10 @@ abstract class TaskRunner extends Thread {
     this.mapOutputFile = new MapOutputFile();
     this.mapOutputFile.setConf(conf);
     this.jvmManager = tracker.getJvmManagerInstance();
+
+    // get property if TORQUE should be used as scheduler
+    this.useDrmaa = this.conf.getBoolean("mapred.drmaa.enabled", false);
+    LOG.info("TaskTracker will use DRMAA Scheduler: " + this.useDrmaa);
   }
 
   public Task getTask() { return t; }
@@ -226,7 +233,14 @@ abstract class TaskRunner extends Thread {
       errorInfo = getVMEnvironment(errorInfo, workDir, conf, env,
                                    taskid, logSize);
 
-      launchJvmAndWait(setup, vargs, stdout, stderr, logSize, workDir, env);
+      LOG.info("TRQ> Starting Child JVM with vargs="+vargs.toString());
+
+      if (useDrmaa) {
+         DrmaaManager.SubmitJob(t, setup, vargs, workDir, env, stdout, stderr);
+      } else {
+        launchJvmAndWait(setup, vargs, stdout, stderr, logSize, workDir, env);
+      }
+
       tracker.getTaskTrackerInstrumentation().reportTaskEnd(t.getTaskID());
       if (exitCodeSet) {
         if (!killed && exitCode != 0) {
@@ -471,11 +485,13 @@ abstract class TaskRunner extends Thread {
       }
     }
 
-    // Add main class and its arguments 
-    vargs.add(Child.class.getName());  // main of Child
+    // Add main class and its arguments
+    String childName = useDrmaa ? DrmaaChild.class.getName() : Child.class.getName();
+    vargs.add(childName);
+    // vargs.add(Child.class.getName());  // main of Child
     // pass umbilical address
     InetSocketAddress address = tracker.getTaskTrackerReportAddress();
-    vargs.add(address.getAddress().getHostAddress()); 
+    vargs.add(address.getAddress().getHostName()); 
     vargs.add(Integer.toString(address.getPort())); 
     vargs.add(taskid.toString());                      // pass task identifier
     // pass task log location
@@ -560,7 +576,7 @@ abstract class TaskRunner extends Thread {
       ldLibraryPath.append(oldLdLibraryPath);
     }
     env.put("LD_LIBRARY_PATH", ldLibraryPath.toString());
-    
+
     // put jobTokenFile name into env
     String jobTokenFile = conf.get(TokenCache.JOB_TOKENS_FILENAME);
     LOG.debug("putting jobToken file name into environment fn=" + jobTokenFile);
