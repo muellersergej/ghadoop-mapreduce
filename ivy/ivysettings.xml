@@ -42,6 +42,10 @@
     <ibiblio name="apache-snapshot" root="${snapshot.apache.org}" m2compatible="true"
         checkmodified="true" changingPattern=".*SNAPSHOT"/>
 
+	<filesystem name="libraries">
+		<artifact pattern="${ivy.settings.dir}/repository/[module]-[revision].[ext]" />
+	</filesystem>
+
     <filesystem name="fs" m2compatible="true" force="true">
        <artifact pattern="${repo.dir}/[organisation]/[module]/[revision]/[module]-[revision].[ext]"/>
        <ivy pattern="${repo.dir}/[organisation]/[module]/[revision]/[module]-[revision].pom"/>
@@ -49,10 +53,12 @@
 
     <chain name="default" dual="true" checkmodified="true" changingPattern=".*SNAPSHOT">
       <resolver ref="apache-snapshot"/> 
+	  <resolver ref="libraries"/>
       <resolver ref="maven2"/>
     </chain>
 
     <chain name="internal" dual="true">
+	  <resolver ref="libraries"/>
       <resolver ref="fs"/>
       <resolver ref="apache-snapshot"/> 
       <resolver ref="maven2"/>

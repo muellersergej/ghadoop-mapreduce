@@ -55,6 +55,8 @@
     <artifact conf="master"/>
   </publications>
  <dependencies>
+   <dependency name="jdrmaa-torque" rev="0.1" conf="common->default"/>
+   <dependency name="jdrmaa" rev="0.1" conf="common->default"/>
    <dependency org="org.apache.hadoop" name="hadoop-common" 
                rev="${hadoop-common.version}" conf="common->default"/> 
    <dependency org="org.apache.hadoop" name="hadoop-common-test" 

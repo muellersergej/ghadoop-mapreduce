@@ -13,6 +13,12 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.ggf.drmaa.DrmaaException;
+import org.ggf.drmaa.JobInfo;
+import org.ggf.drmaa.JobTemplate;
+import org.ggf.drmaa.Session;
+import org.ggf.drmaa.SessionFactory;
+
 class DrmaaManager {
   public static final Log LOG = LogFactory.getLog(DrmaaManager.class);
   public static String newLineChar = System.getProperty("line.separator");
@@ -36,7 +42,7 @@ class DrmaaManager {
           File stdout,
           File stderr
   ) throws IOException {
-
+    
     LOG.info("TRQ> Submitting job in working directory = " + workDir.toString());
     String gfarmConfig = System.getenv("GFARM_CONFIG_FILE");
     if (gfarmConfig != null) env.put("GFARM_CONFIG_FILE", gfarmConfig.toString());
@@ -70,7 +76,7 @@ class DrmaaManager {
     jobScript.write(newLineChar);
     jobScript.write("# set working directory");
     jobScript.write(newLineChar);
-    jobScript.write("#PBS -q " + (task.isMapTask() ? "mappers" : "reducers"));
+    //jobScript.write("#PBS -q " + (task.isMapTask() ? "mappers" : "reducers"));
     jobScript.write(newLineChar);
     //jobScript.write("#PBS -l nodes=GH1-TRQ-01");
     jobScript.write(newLineChar);
