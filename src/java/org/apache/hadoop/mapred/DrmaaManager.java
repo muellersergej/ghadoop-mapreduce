@@ -33,7 +33,7 @@ class DrmaaManager {
     this.taskTracker = tracker;    
   }
 
-  public static void SubmitJob(
+  public static void SubmitJobAndWait(
           Task task,
           List<String> setup,
           List<String> cmd,
@@ -110,6 +110,7 @@ class DrmaaManager {
     jobScript.write("#");
     jobScript.write(newLineChar);
     jobScript.write(command.toString());
+    LOG.info (command.toString());
     jobScript.close();
 
     // TODO: read the job id from the stdout
@@ -121,6 +122,11 @@ class DrmaaManager {
     LOG.info("executing command: " + shellCommand.toArray().toString());
     Shell.ShellCommandExecutor shexec = new Shell.ShellCommandExecutor(shellCommand.toArray(new String[0]), workDir, env);
     shexec.execute();
+    try {
+      Thread.sleep(10000);
+    } catch (Exception e) {
+      // do nothing
+    }
   }
 
   synchronized public void stop() {

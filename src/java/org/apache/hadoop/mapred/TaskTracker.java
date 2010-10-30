@@ -3098,21 +3098,32 @@ public class TaskTracker
    */
   public synchronized JvmTask getTask(TaskAttemptID taskId)
   throws IOException {
+
+    if (taskId == null) {
+      // task id, kill the jvm
+      LOG.info("Killing JVM requesting because it requested a task with a tas id = null");
+      return new JvmTask(null, true);            
+    }
+
+    LOG.warn("Child JVM asked for a task with ID "+ taskId);
+    
+    
     // TODO: do things right here, the task attemped id should return the required Task
     LOG.debug("Child JVM asked for a task with ID "+ taskId);
 
     RunningJob rjob = runningJobs.get(taskId.getJobID());
     if (rjob == null) { //kill the JVM since the job is dead
       LOG.info("Killing JVM requesting for task  " + taskId + " since job " + taskId.getJobID() + " is dead");
+      // todo ghadoop: return snomething useful so jvm can be killed remotely
       return new JvmTask(null, true);
     }
 
     TaskInProgress tip = tasks.get(taskId);
     if (tip != null) { //is task still present
-      LOG.info("Torque child is given task with:" + taskId);
+      LOG.info("child is given task with:" + taskId);
       return new JvmTask(tip.getTask(), false);
     } else {
-      LOG.info("Killing torque child since scheduled task: " +
+      LOG.info("Killing child since scheduled task: " +
           tip.getTask().getTaskID() + " is " + tip.taskStatus.getRunState());
       return new JvmTask(null, true);
     }

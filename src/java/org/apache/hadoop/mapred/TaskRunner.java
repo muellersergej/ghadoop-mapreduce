@@ -236,7 +236,7 @@ abstract class TaskRunner extends Thread {
       LOG.info("TRQ> Starting Child JVM with vargs="+vargs.toString());
 
       if (useDrmaa) {
-         DrmaaManager.SubmitJob(t, setup, vargs, workDir, env, stdout, stderr);
+         DrmaaManager.SubmitJobAndWait(t, setup, vargs, workDir, env, stdout, stderr);
       } else {
         launchJvmAndWait(setup, vargs, stdout, stderr, logSize, workDir, env);
       }
@@ -486,7 +486,7 @@ abstract class TaskRunner extends Thread {
     }
 
     // Add main class and its arguments
-    String childName = useDrmaa ? DrmaaChild.class.getName() : Child.class.getName();
+    String childName = useDrmaa ? RemoteChild.class.getName() : Child.class.getName();
     vargs.add(childName);
     // vargs.add(Child.class.getName());  // main of Child
     // pass umbilical address
