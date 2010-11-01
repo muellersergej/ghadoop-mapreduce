@@ -77,10 +77,7 @@ abstract class TaskRunner extends Thread {
   protected JobConf conf;
   JvmManager jvmManager;
 
-  DrmaaManager drmaaManager;
-  private boolean useDrmaa;
-
-  /** 
+  /**
    * for cleaning up old map outputs
    */
   protected MapOutputFile mapOutputFile;
@@ -96,10 +93,6 @@ abstract class TaskRunner extends Thread {
     this.mapOutputFile = new MapOutputFile();
     this.mapOutputFile.setConf(conf);
     this.jvmManager = tracker.getJvmManagerInstance();
-
-    // get property if TORQUE should be used as scheduler
-    this.useDrmaa = this.conf.getBoolean("mapred.drmaa.enabled", false);
-    LOG.info("TaskTracker will use DRMAA Scheduler: " + this.useDrmaa);
   }
 
   public Task getTask() { return t; }
@@ -233,14 +226,7 @@ abstract class TaskRunner extends Thread {
       errorInfo = getVMEnvironment(errorInfo, workDir, conf, env,
                                    taskid, logSize);
 
-      LOG.info("TRQ> Starting Child JVM with vargs="+vargs.toString());
-
-      if (useDrmaa) {
-         DrmaaManager.SubmitJobAndWait(t, setup, vargs, workDir, env, stdout, stderr);
-      } else {
-        launchJvmAndWait(setup, vargs, stdout, stderr, logSize, workDir, env);
-      }
-
+      launchJvmAndWait(setup, vargs, stdout, stderr, logSize, workDir, env);
       tracker.getTaskTrackerInstrumentation().reportTaskEnd(t.getTaskID());
       if (exitCodeSet) {
         if (!killed && exitCode != 0) {
@@ -486,8 +472,7 @@ abstract class TaskRunner extends Thread {
     }
 
     // Add main class and its arguments
-    String childName = useDrmaa ? RemoteChild.class.getName() : Child.class.getName();
-    vargs.add(childName);
+    vargs.add(Child.class.getName());
     // vargs.add(Child.class.getName());  // main of Child
     // pass umbilical address
     InetSocketAddress address = tracker.getTaskTrackerReportAddress();

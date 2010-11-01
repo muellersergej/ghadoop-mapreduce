@@ -263,7 +263,6 @@ public class TaskTracker
   int workerThreads;
   CleanupQueue directoryCleanupThread;
   private volatile JvmManager jvmManager;
-  private volatile DrmaaManager drmaaManager;
   UserLogCleaner taskLogCleanupThread;
   private TaskMemoryManagerThread taskMemoryManager;
   private boolean taskMemoryManagerEnabled = true;
@@ -653,7 +652,6 @@ public class TaskTracker
     int tmpPort = socAddr.getPort();
     
     this.jvmManager = new JvmManager(this);
-    this.drmaaManager = new DrmaaManager(this);
 
     // Set service-level authorization security policy
     if (this.fConf.getBoolean(
@@ -1227,7 +1225,6 @@ public class TaskTracker
     
     this.distributedCacheManager.stopCleanupThread();
     jvmManager.stop();
-    drmaaManager.stop();
     
     // shutdown RPC connections
     RPC.stopProxy(jobClient);

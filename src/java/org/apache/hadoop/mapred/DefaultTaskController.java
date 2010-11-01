@@ -58,6 +58,7 @@ public class DefaultTaskController extends TaskController {
   void launchTaskJVM(TaskController.TaskControllerContext context) 
                                       throws IOException {
     initializeTask(context);
+    LOG.info("GHADOOP: LAUNCHING DEFAULT JVM TASK.");
 
     JvmEnv env = context.env;
     List<String> wrappedCommand = 
@@ -68,7 +69,9 @@ public class DefaultTaskController extends TaskController {
                                   env.workDir, env.env);
     // set the ShellCommandExecutor for later use.
     context.shExec = shexec;
+    LOG.info("GHADOOP: pre executing shell command at time: "+ new java.util.Date().toString());
     shexec.execute();
+    LOG.info("GHADOOP: post executing shell command at time: "+ new java.util.Date().toString());
   }
     
   /**
