@@ -669,8 +669,10 @@ public class TaskTracker
                        maxMapSlots : maxReduceSlots;
     //set the num handlers to max*2 since canCommit may wait for the duration
     //of a heartbeat RPC
+    int numOfHandlers = 4 * max;
+    LOG.debug("Starting taskReporterServer with " + numOfHandlers + " handlers.");
     this.taskReportServer = RPC.getServer(this.getClass(), this, bindAddress,
-        tmpPort, 2 * max, false, this.fConf, this.jobTokenSecretManager);
+        tmpPort, numOfHandlers, false, this.fConf, this.jobTokenSecretManager);
     this.taskReportServer.start();
 
     // get the assigned address
@@ -3170,6 +3172,7 @@ public class TaskTracker
                                               TaskStatus taskStatus) 
   throws IOException {
     TaskInProgress tip = tasks.get(taskid);
+    LOG.debug("Got status update: " + taskStatus.getStateString() + " from: "+taskid);
     if (tip != null) {
       tip.reportProgress(taskStatus);
       return true;
@@ -3185,6 +3188,7 @@ public class TaskTracker
    */
   public synchronized void reportDiagnosticInfo(TaskAttemptID taskid, String info) throws IOException {
     TaskInProgress tip = tasks.get(taskid);
+    LOG.debug("Got diagnostics info: " + info + " from: "+taskid);
     if (tip != null) {
       tip.reportDiagnosticInfo(info);
     } else {
@@ -3233,6 +3237,7 @@ public class TaskTracker
    */
   public synchronized void done(TaskAttemptID taskid) 
   throws IOException {
+    LOG.info("received done message with: "+taskid);
     TaskInProgress tip = tasks.get(taskid);
     commitResponses.remove(taskid);
     if (tip != null) {

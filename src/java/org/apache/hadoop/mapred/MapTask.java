@@ -1411,6 +1411,8 @@ class MapTask extends Task {
         final SpillRecord spillRec = new SpillRecord(partitions);
         final Path filename =
             mapOutputFile.getSpillFileForWrite(numSpills, size);
+        // ghadoop: logging where the file is actually stored
+        LOG.info("Writing map output to: "+filename);
         out = rfs.create(filename);
 
         final int mstart = kvend / NMETA;

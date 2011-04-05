@@ -79,7 +79,7 @@ public interface TaskUmbilicalProtocol extends VersionedProtocol {
 
 
   /**
-   * Called when a torque child task process starts, to get its task.
+   * Called when a drmaa child task process starts, to get its task.
    * @param taskId the ID of the task attempt w.r.t the tasktracker that launched it
    * @return Task object
    * @throws IOException

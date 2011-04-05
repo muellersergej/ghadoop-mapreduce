@@ -198,7 +198,9 @@ class JobQueueTaskScheduler extends TaskScheduler {
             // We assign at most 1 off-switch or speculative task
             // This is to prevent TaskTrackers from stealing local-tasks
             // from other TaskTrackers.
-            break scheduleMaps;
+            boolean reducedStealing = conf.getBoolean(JTConfig.JT_TASK_ALLOC_REDUCED_STEALING, true);
+            if (reducedStealing)
+              break scheduleMaps;
           }
         }
       }

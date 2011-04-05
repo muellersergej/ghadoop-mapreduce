@@ -76,7 +76,7 @@ abstract public class Task implements Writable, Configurable {
     LogFactory.getLog(Task.class);
 
   public static String MERGED_OUTPUT_PREFIX = ".merged";
-  
+  private boolean canStopPingThread = false;
 
   /**
    * Counters to measure the usage of the different file systems.
@@ -799,15 +799,21 @@ abstract public class Task implements Writable, Configurable {
                    ) throws IOException, InterruptedException {
     LOG.info("Task:" + taskId + " is done."
              + " And is in the process of commiting");
+    LOG.info("Task:" + taskId + " is updating counter.");
     updateCounters();
+    LOG.info("Task:" + taskId + " is executing isCommitRequired()");
 
     boolean commitRequired = isCommitRequired();
+    LOG.info("Task:" + taskId + " isCommitRequired() returned " + commitRequired);
     if (commitRequired) {
       int retries = MAX_RETRIES;
+      LOG.info("Task:" + taskId + " is executing setState()");
+
       setState(TaskStatus.State.COMMIT_PENDING);
       // say the task tracker that task is commit pending
       while (true) {
         try {
+          LOG.info("Task:" + taskId + " is not done yet: commitPending.");
           umbilical.commitPending(taskId, taskStatus);
           break;
         } catch (InterruptedException ie) {
@@ -821,15 +827,23 @@ abstract public class Task implements Writable, Configurable {
         }
       }
       //wait for commit approval and commit
+      LOG.info("Task:" + taskId + " is not done yet: commit().");
       commit(umbilical, reporter, committer);
     }
+    LOG.info("Task:" + taskId + " is executing taskDone.set(true) ");
     taskDone.set(true);
+    LOG.info("Task:" + taskId + " is stopping cummunication thread. ");
+
     reporter.stopCommunicationThread();
     // Make sure we send at least one set of counter increments. It's
     // ok to call updateCounters() in this thread after comm thread stopped.
+    LOG.info("Task:" + taskId + " is updateCounters()");
+
     updateCounters();
+    LOG.info("Task:" + taskId + " is sendLastUpdate(umbilical);");
     sendLastUpdate(umbilical);
     //signal the tasktracker that we are done
+    LOG.info("Task:" + taskId + " is sendDone(umbilical);");
     sendDone(umbilical);
   }
 
@@ -916,6 +930,7 @@ abstract public class Task implements Writable, Configurable {
     int retries = MAX_RETRIES;
     while (true) {
       try {
+        LOG.info("Task '" + taskId + "' about to send done.");
         umbilical.done(getTaskID());
         LOG.info("Task '" + taskId + "' done.");
         return;
@@ -938,6 +953,7 @@ abstract public class Task implements Writable, Configurable {
       try {
         while (!umbilical.canCommit(taskId)) {
           try {
+            LOG.info("Task:" + taskId + " is allowed to commit: retrying.");
             Thread.sleep(1000);
           } catch(InterruptedException ie) {
             //ignore

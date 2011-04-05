@@ -165,12 +165,15 @@ class DrmaaChild {
         //taskid = null;
         //JvmTask myTask = umbilical.getTask(context);
         taskid = firstTaskid;
+        LOG.debug("Getting task for taskID: " + taskid);
         JvmTask myTask = umbilical.getTask(taskid);
         if (myTask.shouldDie()) {
           break;
         } else {
           if (myTask.getTask() == null) {
+            // todo ghadoop: this will not work if loop is continued with taskid = null
             taskid = null;
+            LOG.warn("Could not get a task for first task id: " + firstTaskid + ". Sleeping.");            
             if (++idleLoopCount >= SLEEP_LONGER_COUNT) {
               //we sleep for a bigger interval when we don't receive
               //tasks for a while
@@ -183,13 +186,16 @@ class DrmaaChild {
         }
         idleLoopCount = 0;
         task = myTask.getTask();
+        LOG.debug("Got task for task: " + task.toString());
         taskid = task.getTaskID();
         isCleanup = task.isTaskCleanupTask();
+        LOG.debug("FileSystem.clearStatistics()");        
         // reset the statistics for the task
         FileSystem.clearStatistics();
 
         //create the index file so that the log files 
         //are viewable immediately
+        LOG.debug("TaskLog.syncLogs(logLocation, taskid, isCleanup);");
         TaskLog.syncLogs(logLocation, taskid, isCleanup);
         final JobConf job = new JobConf(task.getJobFile());
         
@@ -199,11 +205,13 @@ class DrmaaChild {
         
         // setup the child's Configs.LOCAL_DIR. The child is now sandboxed and
         // can only see files down and under attemtdir only.
+        LOG.debug("TaskRunner.setupChildMapredLocalDirs(task, job);");
         TaskRunner.setupChildMapredLocalDirs(task, job);
 
         //setupWorkDir actually sets up the symlinks for the distributed
         //cache. After a task exits we wipe the workdir clean, and hence
         //the symlinks have to be rebuilt.
+        LOG.debug("TaskRunner.setupWorkDir");
         TaskRunner.setupWorkDir(job, new File(".").getAbsoluteFile());
 
         numTasksToExecute = job.getNumTasksToExecutePerJvm();
@@ -212,6 +220,7 @@ class DrmaaChild {
         task.setConf(job);
 
         // Initiate Java VM metrics
+        LOG.debug("JvmMetrics.init");                             
         JvmMetrics.init(task.getPhase().toString(), job.getSessionId());
         LOG.debug("Creating remote user to execute task: " + job.get("user.name"));
         childUGI = UserGroupInformation.createRemoteUser(job.get("user.name"));
@@ -227,9 +236,12 @@ class DrmaaChild {
           public Object run() throws Exception {
             try {
               // use job-specified working directory
+              LOG.debug("setting working directory");
               FileSystem.get(job).setWorkingDirectory(job.getWorkingDirectory());
+              LOG.debug("starting the task");              
               taskFinal.run(job, umbilical);             // run the task
             } finally {
+              LOG.debug("(finally) syncing logs.");                            
               TaskLog.syncLogs(logLocation, taskid, isCleanup);
             }
             
@@ -238,6 +250,7 @@ class DrmaaChild {
         });
 
         if (numTasksToExecute > 0 && ++numTasksExecuted == numTasksToExecute) {
+          LOG.debug("no more tasks to execute in this jvm");                                      
           break;
         }
       }

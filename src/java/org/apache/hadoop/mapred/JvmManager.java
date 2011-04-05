@@ -362,10 +362,11 @@ class JvmManager {
         spawnNewJvm = true;
       }
 
+      spawnNewJvm = true; // ghadoop hacks: reuse of jvms is not implemented yet.
       if (spawnNewJvm) {
         if (runnerToKill != null) {
           LOG.info("Killing JVM: " + runnerToKill.jvmId);
-          killJvmRunner(runnerToKill);
+          // killJvmRunner(runnerToKill); // ghadoop hacks: never kill a jvm the hard way (wait until its down)
         }
         spawnNewJvm(jobId, env, t);
         return;
@@ -455,7 +456,9 @@ class JvmManager {
           //Launch the task controller to run task JVM
           initalContext.task = jvmToRunningTask.get(jvmId).getTask();
           initalContext.env = env;
+          LOG.debug("JvmRunner is about to launch task JVM for initial task "+initalContext.task.getTaskID());
           tracker.getTaskController().launchTaskJVM(initalContext);
+          LOG.debug("JvmRunner finished launching task JVM for initial task " + initalContext.task.getTaskID());
         } catch (IOException ioe) {
           // do nothing
           // error and output are appropriately redirected

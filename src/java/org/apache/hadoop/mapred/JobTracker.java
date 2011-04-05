@@ -1396,12 +1396,14 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
     retiredJobsCacheSize = conf.getInt(JT_RETIREJOB_CACHE_SIZE, 1000);
     MAX_BLACKLISTS_PER_TRACKER = 
       conf.getInt(JTConfig.JT_MAX_TRACKER_BLACKLISTS, 4);
-    
-    NUM_HEARTBEATS_IN_SECOND = 
-      conf.getInt(JT_HEARTBEATS_IN_SECOND, DEFAULT_NUM_HEARTBEATS_IN_SECOND);
-    if (NUM_HEARTBEATS_IN_SECOND < MIN_NUM_HEARTBEATS_IN_SECOND) {
-      NUM_HEARTBEATS_IN_SECOND = DEFAULT_NUM_HEARTBEATS_IN_SECOND;
-    }
+
+    // g-hadoop hacks: always use the configured number (testing purposes)
+    NUM_HEARTBEATS_IN_SECOND =
+            conf.getInt(JT_HEARTBEATS_IN_SECOND, DEFAULT_NUM_HEARTBEATS_IN_SECOND);
+
+//    if (NUM_HEARTBEATS_IN_SECOND < MIN_NUM_HEARTBEATS_IN_SECOND) {
+//      NUM_HEARTBEATS_IN_SECOND = DEFAULT_NUM_HEARTBEATS_IN_SECOND;
+//    }
     
     HEARTBEATS_SCALING_FACTOR = 
       conf.getFloat(JT_HEARTBEATS_SCALING_FACTOR, 
@@ -2497,12 +2499,15 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
   public int getNextHeartbeatInterval() {
     // get the no of task trackers
     int clusterSize = getClusterStatus().getTaskTrackers();
-    int heartbeatInterval =  Math.max(
-                                (int)(1000 * HEARTBEATS_SCALING_FACTOR *
-                                      Math.ceil((double)clusterSize / 
-                                                NUM_HEARTBEATS_IN_SECOND)),
-                                HEARTBEAT_INTERVAL_MIN) ;
-    return heartbeatInterval;
+    // ghadoop hacks: we only have very few TT bust each TT may schedule hundreds of tasks in parallel
+    // increase this interval to > 10 sec
+    return 10 * 1000;
+//    int heartbeatInterval =  Math.max(
+//                                (int)(1000 * HEARTBEATS_SCALING_FACTOR *
+//                                      Math.ceil((double)clusterSize /
+//                                                NUM_HEARTBEATS_IN_SECOND)),
+//                                HEARTBEAT_INTERVAL_MIN) ;
+//    return heartbeatInterval;
   }
 
   /**

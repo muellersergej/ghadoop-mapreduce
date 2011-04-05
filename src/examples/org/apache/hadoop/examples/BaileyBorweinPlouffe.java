@@ -149,9 +149,9 @@ public class BaileyBorweinPlouffe extends Configured implements Tool {
       if (conf.getInt(DIGIT_START_PROPERTY, 1) == 1) {
         final Path outfile = new Path(dir, "pi.txt");
         LOG.info("Writing text output to " + outfile);
-        final OutputStream outputstream = fs.create(outfile);
+        final OutputStream outputstream = new BufferedOutputStream(fs.create(outfile));
         try {
-          final PrintStream out = new PrintStream(outputstream, true);
+          final PrintStream out = new PrintStream(outputstream);
           // write hex text
           print(out, hex.iterator(), "Pi = 0x3.", "%02X", 5, 5);
           out.println("Total number of hexadecimal digits is "

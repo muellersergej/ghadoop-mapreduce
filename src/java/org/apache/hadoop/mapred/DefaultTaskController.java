@@ -69,9 +69,9 @@ public class DefaultTaskController extends TaskController {
                                   env.workDir, env.env);
     // set the ShellCommandExecutor for later use.
     context.shExec = shexec;
-    LOG.info("GHADOOP: pre executing shell command at time: "+ new java.util.Date().toString());
+    LOG.debug("GHADOOP: pre executing shell command at time: "+ new java.util.Date().toString());
     shexec.execute();
-    LOG.info("GHADOOP: post executing shell command at time: "+ new java.util.Date().toString());
+    LOG.debug("GHADOOP: post executing shell command at time: "+ new java.util.Date().toString());
   }
     
   /**

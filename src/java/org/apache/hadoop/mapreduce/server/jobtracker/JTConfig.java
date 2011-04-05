@@ -104,4 +104,6 @@ public interface JTConfig extends MRConfig {
   public static final String JT_USER_NAME = "mapreduce.jobtracker.user.name";
   public static final String JT_KEYTAB_FILE = 
     "mapreduce.jobtracker.keytab.file";
+  public static final String JT_TASK_ALLOC_REDUCED_STEALING =
+    "mapreduce.jobtracker.taskscheduler.taskalloc.reducedstealing";
 }

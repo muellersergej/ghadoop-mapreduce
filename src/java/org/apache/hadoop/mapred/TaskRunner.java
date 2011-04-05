@@ -226,7 +226,9 @@ abstract class TaskRunner extends Thread {
       errorInfo = getVMEnvironment(errorInfo, workDir, conf, env,
                                    taskid, logSize);
 
+      LOG.debug("Launching JVM and waiting for task " + taskid.toString() + " to finish.");
       launchJvmAndWait(setup, vargs, stdout, stderr, logSize, workDir, env);
+      LOG.debug("JVM with for initial task " + taskid.toString() + " finished wating.");
       tracker.getTaskTrackerInstrumentation().reportTaskEnd(t.getTaskID());
       if (exitCodeSet) {
         if (!killed && exitCode != 0) {

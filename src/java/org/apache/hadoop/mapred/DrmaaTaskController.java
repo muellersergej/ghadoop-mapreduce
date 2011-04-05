@@ -30,6 +30,8 @@ import org.ggf.drmaa.*;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -78,7 +80,7 @@ public class DrmaaTaskController extends TaskController {
   
   void launchTaskJVM(TaskControllerContext context) throws IOException {
     initializeTask(context);
-    LOG.info("GHADOOP: LAUNCHING DRMAA JVM TASK.");
+    LOG.debug("Launching DRMAA task jvm for task " + context.task.getTaskID());
     try {
       Session session = DrmaaTaskController.getDrmaaSessionInstance();
       JvmEnv env = context.env;
@@ -91,7 +93,9 @@ public class DrmaaTaskController extends TaskController {
       if (task.isJobSetupTask()) typeFlag = "S";
       if (task.isJobCleanupTask()) typeFlag = "C";
       if (task.isTaskCleanupTask()) typeFlag = "c";
-      String jobName = typeFlag + ":" + task.conf.getJobName().replaceAll("\\W", "_");
+
+      String attemptID = task.getTaskID().toString();
+      String jobName = attemptID.substring(Math.max(attemptID.length() - 10, 0)); // typeFlag + ":" + task.conf.getJobName().replaceAll("\\W", "_");
       jt.setJobName(jobName);
 
       // set working directory to hadoop temp directory created by the task tracker
@@ -106,44 +110,46 @@ public class DrmaaTaskController extends TaskController {
 
       // set command with params that will run the remote child JVM
       jt.setRemoteCommand(env.vargs.get(0));
-      LOG.info("PRE ARGS: " + StringUtils.join(env.vargs.toArray(), " :: "));
+      //LOG.info("PRE ARGS: " + StringUtils.join(env.vargs.toArray(), " :: "));
       env.vargs.set(env.vargs.size() - 6, DrmaaChild.class.getName());
-      LOG.info("POST ARGS: " + StringUtils.join(env.vargs.toArray(), " :: "));
+      //LOG.info("POST ARGS: " + StringUtils.join(env.vargs.toArray(), " :: "));
       jt.setArgs(env.vargs.subList(1, env.vargs.size()));
 
-      LOG.debug("pre executing drmaa command at time: "+ new java.util.Date().toString());
 
+      Date startTime = new Date();
       // submit the job
       String id = session.runJob(jt);
-
-      LOG.info("Your job has been submitted with id " + id);
-
+      Date subTime = new Date();
+      LOG.info("DRMAA Job " + attemptID + " has been submitted with id " + id);
       session.deleteJobTemplate(jt);
       org.ggf.drmaa.JobInfo info = session.wait(id, Session.TIMEOUT_WAIT_FOREVER);
+      session.control();
+      Date finishTime = new Date();
 
-      LOG.debug("post executing drmaa command at time: "+ new java.util.Date().toString());
-
+      String status = "finished with unclear conditions";
       if (info.wasAborted()) {
-        LOG.debug("Job " + info.getJobId() + " never ran");
+        status = " never ran";
       } else if (info.hasExited()) {
-        LOG.debug("Job " + info.getJobId() + " finished regularly with exit status " + info.getExitStatus());
+        status = "finished regularly with exit status " + info.getExitStatus();
       } else if (info.hasSignaled()) {
-        LOG.debug("Job " + info.getJobId() + " finished due to signal " + info.getTerminatingSignal());
-      } else {
-        LOG.debug("Job " + info.getJobId() + " finished with unclear conditions");
-      }
-
-      LOG.debug("Job Usage:");
+        status = "finished due to signal " + info.getTerminatingSignal();
+      } 
+      double submitSeconds = (subTime.getTime() - startTime.getTime()) / 1000.0;
+      double finishSeconds = (finishTime.getTime() - startTime.getTime()) / 1000.0;
+        
+      LOG.info("DRMAA Job " + attemptID + " took " + finishSeconds + "s (" + submitSeconds + "s) with status: " + status);
 
       Map rmap = info.getResourceUsage();
       Iterator i = rmap.keySet().iterator();
-
+      StringBuilder usage = new StringBuilder();
       while (i.hasNext()) {
         String name = (String) i.next();
         String value = (String) rmap.get(name);
-
-        LOG.debug("  " + name + "=" + value);
+        usage.append(name + "=" + value + "; ");
       }
+
+      LOG.info("DRMAA Job " + attemptID + " usage: " + usage.toString());
+
 
       // set a fake shell command executer so hadoop can access the error code
       // TODO: remove this hack
@@ -155,6 +161,8 @@ public class DrmaaTaskController extends TaskController {
         exitCode.setAccessible(true);
         exitCode.setInt(shexec2, info.getExitStatus());
         context.shExec = shexec2;
+
+        LOG.info("DRMAA Job (" + attemptID + ") is faking exit status: " + info.getExitStatus());
 
         // missuse the pid as the job id
         context.pid = id;
@@ -179,6 +187,7 @@ public class DrmaaTaskController extends TaskController {
     // The default task controller does not need to set up
     // any permissions for proper execution.
     // So this is a dummy method.
+    LOG.debug("Initializing DRMAA task " + context.task.getTaskID());
 
     String drmaaImpl =  context.task.conf.get("org.ggf.drmaa.SessionFactory");
     if (drmaaImpl != null) {
@@ -198,6 +207,8 @@ public class DrmaaTaskController extends TaskController {
 
   @Override
   void terminateTask(TaskControllerContext context) {
+    LOG.debug("Terminating DRMAA task " + context.task.getTaskID());
+
     return; // not implemented yet
 
 //    ShellCommandExecutor shexec = context.shExec;
@@ -225,6 +236,7 @@ public class DrmaaTaskController extends TaskController {
   
   @Override
   void killTask(TaskControllerContext context) {
+    LOG.debug("Killing DRMAA task " + context.task.getTaskID());    
     return; // not implemented yet
 
 //    ShellCommandExecutor shexec = context.shExec;
